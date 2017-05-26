@@ -322,6 +322,7 @@ func loadConfig() error {
 	// hold the mutex lock before a new config is assigned.
 	serverConfigMu.Lock()
 	serverConfig = srvCfg
+
 	if !globalIsEnvCreds {
 		globalActiveCred = serverConfig.GetCredential()
 	}

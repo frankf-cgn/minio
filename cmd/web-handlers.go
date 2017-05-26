@@ -392,7 +392,7 @@ func (web *webAPIHandlers) SetAuth(r *http.Request, args *SetAuthArgs, reply *Se
 	}
 
 	// If creds are set through ENV disallow changing credentials.
-	if globalIsEnvCreds || globalIsSAMLCreds {
+	if globalIsEnvCreds || globalIsAuthCreds {
 		return toJSONError(errChangeCredNotAllowed)
 	}
 
@@ -401,7 +401,7 @@ func (web *webAPIHandlers) SetAuth(r *http.Request, args *SetAuthArgs, reply *Se
 		return toJSONError(err)
 	}
 
-	// Notify all other Minio peers to update credentials
+	// Notify all other Minio peers to update credentials.
 	errsMap := updateCredsOnPeers(creds)
 
 	// Update local credentials
@@ -409,8 +409,17 @@ func (web *webAPIHandlers) SetAuth(r *http.Request, args *SetAuthArgs, reply *Se
 
 	// Persist updated credentials.
 	if err = serverConfig.Save(); err != nil {
-		// Save the current creds when failed to update.
+		// Save the previous creds when failed to update.
 		serverConfig.SetCredential(prevCred)
+
+		errsMap[globalMinioAddr] = err
+	}
+
+	// Update credentials manager.
+	prevCred = globalServerCreds.SetCredential(creds)
+	if err = globalServerCreds.Save(); err != nil {
+		// Save the previous creds when failed to update.
+		globalServerCreds.SetCredential(prevCred)
 
 		errsMap[globalMinioAddr] = err
 	}
@@ -565,7 +574,7 @@ func (web *webAPIHandlers) Download(w http.ResponseWriter, r *http.Request) {
 	object := vars["object"]
 	token := r.URL.Query().Get("token")
 
-	if !isAuthTokenValid(token) && !isBucketActionAllowed("s3:GetObject", bucket, object) {
+	if !isHTTPTokenValid(token) && !isBucketActionAllowed("s3:GetObject", bucket, object) {
 		writeWebErrorResponse(w, errAuthentication)
 		return
 	}
@@ -612,7 +621,7 @@ func (web *webAPIHandlers) DownloadZip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := r.URL.Query().Get("token")
-	if !isAuthTokenValid(token) {
+	if !isHTTPTokenValid(token) {
 		for _, object := range args.Objects {
 			if !isBucketActionAllowed("s3:GetObject", args.BucketName, pathJoin(args.Prefix, object)) {
 				writeWebErrorResponse(w, errAuthentication)

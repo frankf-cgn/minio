@@ -66,9 +66,9 @@ func isSecretKeyValid(secretKey string) bool {
 
 // credential container for access and secret keys.
 type credential struct {
-	AccessKey string    `xml:"AccessKeyId,omitempty" json:"accessKey,omitempty"`
-	SecretKey string    `xml:"SecretAccessKey,omitempty" json:"secretKey,omitempty"`
-	Expiry    time.Time `xml:"Expiration,omitempty" json:"expiry,omitempty"`
+	AccessKey  string    `xml:"AccessKeyId,omitempty" json:"accessKey,omitempty"`
+	SecretKey  string    `xml:"SecretAccessKey,omitempty" json:"secretKey,omitempty"`
+	Expiration time.Time `xml:"Expiration,omitempty" json:"expiration,omitempty"`
 
 	secretKeyHash []byte
 }
@@ -76,6 +76,15 @@ type credential struct {
 // IsValid - returns whether credential is valid or not.
 func (cred credential) IsValid() bool {
 	return isAccessKeyValid(cred.AccessKey) && isSecretKeyValid(cred.SecretKey)
+}
+
+// IsExpired - returns whether credential is expired or not.
+func (cred credential) IsExpired() bool {
+	if cred.Expiration.IsZero() || cred.Expiration == timeSentinel {
+		return false
+	}
+
+	return cred.Expiration.Before(UTCNow())
 }
 
 // Equals - returns whether two credentials are equal or not.
@@ -98,7 +107,7 @@ func (cred credential) Equal(ccred credential) bool {
 		bcrypt.CompareHashAndPassword(cred.secretKeyHash, []byte(ccred.SecretKey)) == nil)
 }
 
-func createCredentialWithExpiry(accessKey, secretKey string, expiry time.Time) (cred credential, err error) {
+func createCredentialWithExpiration(accessKey, secretKey string, expiration time.Time) (cred credential, err error) {
 	if !isAccessKeyValid(accessKey) {
 		err = errInvalidAccessKeyLength
 	} else if !isSecretKeyValid(secretKey) {
@@ -112,17 +121,17 @@ func createCredentialWithExpiry(accessKey, secretKey string, expiry time.Time) (
 			cred.secretKeyHash = secretKeyHash
 		}
 	}
-	if !expiry.IsZero() {
-		cred.Expiry = expiry
+	if !expiration.IsZero() {
+		cred.Expiration = expiration
 	}
 	return cred, err
 }
 
 func createCredential(accessKey, secretKey string) (cred credential, err error) {
-	return createCredentialWithExpiry(accessKey, secretKey, timeSentinel)
+	return createCredentialWithExpiration(accessKey, secretKey, timeSentinel)
 }
 
-func getNewCredentialWithExpiry(accessKeyLen, secretKeyLen int, expiry time.Time) (credential, error) {
+func getNewCredentialWithExpiration(accessKeyLen, secretKeyLen int, expiry time.Time) (credential, error) {
 	// Generate access key.
 	keyBytes := make([]byte, accessKeyLen)
 	_, err = rand.Read(keyBytes)
@@ -139,12 +148,10 @@ func getNewCredentialWithExpiry(accessKeyLen, secretKeyLen int, expiry time.Time
 	keyBytes = make([]byte, secretKeyLen)
 	_, err = rand.Read(keyBytes)
 	if err != nil {
-		return cred, err
+		return credential{}, err
 	}
-
-	secretKey := string([]byte(base64.StdEncoding.EncodeToString(keyBytes))[:secretKeyLen])
-
-	return createCredentialWithExpiry(accessKey, secretKey, expiry)
+	secretKey := string([]byte(base64.StdEncoding.EncodeToString(keyBytes))[:secretKeyMaxLenMinio])
+	return createCredentialWithExpiration(accessKey, secretKey, expiry)
 }
 
 // Initialize a new credential object
