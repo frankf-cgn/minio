@@ -70,6 +70,11 @@ func configureServerHandler(endpoints EndpointList) (http.Handler, error) {
 		return nil, err
 	}
 
+	// Add SAML router.
+	if err = registerSAMLRouter(mux); err != nil {
+		return nil, err
+	}
+
 	// Register web router when its enabled.
 	if globalIsBrowserEnabled {
 		if err := registerWebRouter(mux); err != nil {

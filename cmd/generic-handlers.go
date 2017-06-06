@@ -122,6 +122,13 @@ func (h redirectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// Fetch the redirect location if any.
 			redirectLocation := getRedirectLocation(r.URL.Path)
 			if redirectLocation != "" {
+				if aType == authTypeAnonymous && globalSAMLProvider.Certificate != nil {
+					if !isSAMLAuthorized(r, defaultCookieName, globalSAMLProvider) {
+						// Employ a temporary re-direct.
+						http.Redirect(w, r, minioReservedBucketPath+"/login", http.StatusTemporaryRedirect)
+						return
+					}
+				}
 				// Employ a temporary re-direct.
 				http.Redirect(w, r, redirectLocation, http.StatusTemporaryRedirect)
 				return
