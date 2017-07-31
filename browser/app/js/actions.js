@@ -344,7 +344,8 @@ export const listObjects = () => {
         dispatch(setLoadBucket(''))
         dispatch(setLoadPath(''))
         // Use browserHistory.replace instead of push so that browser back button works fine.
-        browserHistory.replace(`${minioBrowserPrefix}/login`)
+        // browserHistory.replace(`${minioBrowserPrefix}/login`)
+        window.location.replace(`${minioBrowserPrefix}/login`)
       })
   }
 }
@@ -386,7 +387,8 @@ export const selectPrefix = prefix => {
         dispatch(setLoadBucket(''))
         dispatch(setLoadPath(''))
         // Use browserHistory.replace instead of push so that browser back button works fine.
-        browserHistory.replace(`${minioBrowserPrefix}/login`)
+        // browserHistory.replace(`${minioBrowserPrefix}/login`)
+        window.location.replace(`${minioBrowserPrefix}/login`)
       })
   }
 }

@@ -68,6 +68,10 @@ func randomBytes(n int) []byte {
 // SAMLMetadataHandler - implements http.Handler and serves the SAML
 // Metadata specific HTTP endpoint URI.
 func (m *SAMLMiddleware) SAMLMetadataHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Origin") != "" {
+		http.Error(w, "CORS requests are not allowed", http.StatusForbidden)
+		return
+	}
 	buf, err := xml.MarshalIndent(m.ServiceProvider.Metadata(), "", "  ")
 	if err != nil {
 		errorIf(err, "Unable to marshal XML")
@@ -102,6 +106,10 @@ func (m *SAMLMiddleware) SAMLAssertionConsumerHandler(w http.ResponseWriter, r *
 
 // SAMLLogoutHandler is SAML logout http.Handler - that logs you out.
 func (m *SAMLMiddleware) SAMLLogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Origin") != "" {
+		http.Error(w, "CORS requests are not allowed", http.StatusForbidden)
+		return
+	}
 	if !isSAMLAuthorized(r, defaultCookieName, m.ServiceProvider) {
 		return
 	}
@@ -113,6 +121,19 @@ func (m *SAMLMiddleware) SAMLLogoutHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Cannot call this directly on ACS URL path", http.StatusInternalServerError)
 		return
 	}
+
+	tokenCookie, err := r.Cookie(m.CookieName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// delete the cookie
+	tokenCookie.Value = ""
+	tokenCookie.Expires = time.Unix(1, 0) // past time as close to epoch as possible, but not zero time.Time{}
+	http.SetCookie(w, tokenCookie)
+
+	http.Redirect(w, r, minioReservedBucketPath+"/login", http.StatusPermanentRedirect)
 }
 
 // SAMLLoginHandler is SAML login http.Handler - that logs you in.
@@ -120,12 +141,19 @@ func (m *SAMLMiddleware) SAMLLogoutHandler(w http.ResponseWriter, r *http.Reques
 // session, then rather than serve the request, the middlware redirects the user
 // to start the SAML auth flow.
 func (m *SAMLMiddleware) SAMLLoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Origin") != "" {
+		http.Error(w, "CORS requests are not allowed", http.StatusForbidden)
+		return
+	}
 	if isSAMLAuthorized(r, defaultCookieName, m.ServiceProvider) {
 		cookie, _ := r.Cookie(defaultCookieName)
 		if cookie != nil {
 			w.Write([]byte(`<script src="https://unpkg.com/local-storage-fallback/lib/dist.min.js"></script>`))
 			w.Write([]byte(`<script>`))
 			w.Write([]byte(fmt.Sprintf(`window.localStorageFallback.setItem('token', '%s')`, cookie.Value)))
+			w.Write([]byte(`</script>`))
+			w.Write([]byte(`<script>`))
+			w.Write([]byte(`window.location = '/'`))
 			w.Write([]byte(`</script>`))
 		}
 		return

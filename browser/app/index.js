@@ -60,7 +60,8 @@ function authNeeded(nextState, replace, cb) {
     return cb()
   }
   if (location.pathname === minioBrowserPrefix || location.pathname === minioBrowserPrefix + '/') {
-    replace(`${minioBrowserPrefix}/login`)
+    window.location.replace(`${minioBrowserPrefix}/login`)
+    //replace(`${minioBrowserPrefix}/login`)
   }
   return cb()
 }

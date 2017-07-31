@@ -37,7 +37,8 @@ export default class Web {
       .catch(err => {
         if (err.status === 401) {
           storage.removeItem('token')
-          browserHistory.push(`${minioBrowserPrefix}/login`)
+          window.location.replace(`${minioBrowserPrefix}/login`)
+          //browserHistory.push(`${minioBrowserPrefix}/login`)
           throw new Error('Please re-login.')
         }
         if (err.status)
