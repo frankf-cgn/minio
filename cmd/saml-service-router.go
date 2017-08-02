@@ -77,7 +77,7 @@ func New(opts Options) (*SAMLMiddleware, error) {
 			return nil, err
 		}
 		entities := &saml.EntitiesDescriptor{}
-		if err := xml.Unmarshal(data, entities); err != nil {
+		if err = xml.Unmarshal(data, entities); err != nil {
 			return nil, err
 		}
 

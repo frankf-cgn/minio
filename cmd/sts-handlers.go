@@ -206,7 +206,7 @@ func (sts *stsAPIHandlers) AssumeRoleWithSAMLHandler(w http.ResponseWriter, r *h
 		expirationTime = UTCNow().Add(time.Duration(expirationSecs) * time.Second)
 	}
 
-	cred, err := getNewCredentialWithExpiration(expirationTime)
+	cred, err := getNewCredentialWithExpiration(accessKeyMaxLen, secretKeyMaxLen, expirationTime)
 	if err != nil {
 		errorIf(err, "Failed to general new credentials with expiration.")
 		writeSTSErrorResponse(w, ErrSTSMalformedPolicyDocument)

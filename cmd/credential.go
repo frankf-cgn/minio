@@ -134,9 +134,9 @@ func createCredential(accessKey, secretKey string) (cred credential, err error) 
 func getNewCredentialWithExpiration(accessKeyLen, secretKeyLen int, expiry time.Time) (credential, error) {
 	// Generate access key.
 	keyBytes := make([]byte, accessKeyLen)
-	_, err = rand.Read(keyBytes)
+	_, err := rand.Read(keyBytes)
 	if err != nil {
-		return cred, err
+		return credential{}, err
 	}
 
 	for i := 0; i < accessKeyLen; i++ {
@@ -150,13 +150,13 @@ func getNewCredentialWithExpiration(accessKeyLen, secretKeyLen int, expiry time.
 	if err != nil {
 		return credential{}, err
 	}
-	secretKey := string([]byte(base64.StdEncoding.EncodeToString(keyBytes))[:secretKeyMaxLenMinio])
+	secretKey := string([]byte(base64.StdEncoding.EncodeToString(keyBytes))[:secretKeyLen])
 	return createCredentialWithExpiration(accessKey, secretKey, expiry)
 }
 
 // Initialize a new credential object
 func getNewCredential(accessKeyLen, secretKeyLen int) (cred credential, err error) {
-	return getNewCredentialWithExpiry(accessKeyLen, secretKeyLen, timeSentinel)
+	return getNewCredentialWithExpiration(accessKeyLen, secretKeyLen, timeSentinel)
 }
 
 func mustGetNewCredential() credential {

@@ -318,7 +318,7 @@ func (m *SAMLMiddleware) Authorize(w http.ResponseWriter, r *http.Request, asser
 		}
 	}
 
-	cred, err := getNewCredentialWithExpiration(now.Add(defaultCookieMaxAge))
+	cred, err := getNewCredentialWithExpiration(accessKeyMaxLen, secretKeyMaxLen, now.Add(defaultCookieMaxAge))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
