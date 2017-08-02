@@ -1,3 +1,19 @@
+/*
+ * Minio Cloud Storage, (C) 2017 Minio, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package cmd
 
 import (
@@ -74,9 +90,9 @@ func (m *SAMLMiddleware) SAMLMetadataHandler(w http.ResponseWriter, r *http.Requ
 	w.Write(buf)
 }
 
-// SAMLAssertionConsumerHandler - implements http.Handler and serves the SAML
+// AssertionConsumerHandler - implements http.Handler and serves the SAML
 // Assertion Consumer specific HTTP endpoint URI.
-func (m *SAMLMiddleware) SAMLAssertionConsumerHandler(w http.ResponseWriter, r *http.Request) {
+func (m *SAMLMiddleware) AssertionConsumerHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		errorIf(err, "Unable to parse assertion form")
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -97,8 +113,8 @@ func (m *SAMLMiddleware) SAMLAssertionConsumerHandler(w http.ResponseWriter, r *
 	m.Authorize(w, r, assertion)
 }
 
-// SAMLLogoutHandler is SAML logout http.Handler - that logs you out.
-func (m *SAMLMiddleware) SAMLLogoutHandler(w http.ResponseWriter, r *http.Request) {
+// LogoutHandler is SAML logout http.Handler - that logs you out.
+func (m *SAMLMiddleware) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Origin") != "" {
 		http.Error(w, "CORS requests are not allowed", http.StatusForbidden)
 		return
@@ -129,11 +145,11 @@ func (m *SAMLMiddleware) SAMLLogoutHandler(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, minioReservedBucketPath+"/login", http.StatusFound)
 }
 
-// SAMLLoginHandler is SAML login http.Handler - that logs you in.
+// LoginHandler is SAML login http.Handler - that logs you in.
 // associated with a valid session. If the request is not associated with a valid
 // session, then rather than serve the request, the middlware redirects the user
 // to start the SAML auth flow.
-func (m *SAMLMiddleware) SAMLLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (m *SAMLMiddleware) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Origin") != "" {
 		http.Error(w, "CORS requests are not allowed", http.StatusForbidden)
 		return
@@ -377,7 +393,7 @@ func parseSAMLJWT(auth string) (token *jwt.Token, tokenClaims TokenClaims, err e
 	return token, tokenClaims, err
 }
 
-// isSAMLAuthorized is invoked by SAMLLoginHandler to determine if the request
+// isSAMLAuthorized is invoked by LoginHandler to determine if the request
 // is already authorized or if the user's browser should be redirected to the
 // SAML login flow.
 func isSAMLAuthorized(r *http.Request, cookieName string, sp saml.ServiceProvider) bool {

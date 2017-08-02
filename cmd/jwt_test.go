@@ -16,7 +16,9 @@
 
 package cmd
 
-import "testing"
+import (
+	"testing"
+)
 
 func testAuthenticate(authType string, t *testing.T) {
 	testPath, err := newTestConfig(globalMinioDefaultRegion)
@@ -29,7 +31,7 @@ func testAuthenticate(authType string, t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to get new credential, %v", err)
 	}
-	serverConfig.SetCredential(cred)
+	globalServerCreds.SetCredential(cred)
 
 	// Define test cases.
 	testCases := []struct {
@@ -41,7 +43,7 @@ func testAuthenticate(authType string, t *testing.T) {
 		{"user", cred.SecretKey, errInvalidAccessKeyLength},
 		// Secret key (less than 8 chrs) too small.
 		{cred.AccessKey, "pass", errInvalidSecretKeyLength},
-		// Authentication error.
+		// Invalid access key id.
 		{"myuser", "mypassword", errInvalidAccessKeyID},
 		// Authentication error.
 		{cred.AccessKey, "mypassword", errAuthentication},
@@ -50,7 +52,7 @@ func testAuthenticate(authType string, t *testing.T) {
 	}
 
 	// Run tests.
-	for _, testCase := range testCases {
+	for i, testCase := range testCases {
 		var err error
 		if authType == "node" {
 			_, err = authenticateNode(testCase.accessKey, testCase.secretKey)
@@ -62,13 +64,13 @@ func testAuthenticate(authType string, t *testing.T) {
 
 		if testCase.expectedErr != nil {
 			if err == nil {
-				t.Fatalf("%+v: expected: %s, got: <nil>", testCase, testCase.expectedErr)
+				t.Fatalf("Test: %d,  %#v: expected: %s, got: <nil>", i+1, testCase, testCase.expectedErr)
 			}
 			if testCase.expectedErr.Error() != err.Error() {
-				t.Fatalf("%+v: expected: %s, got: %s", testCase, testCase.expectedErr, err)
+				t.Fatalf("Test: %d, %#v: expected: %s, got: %s", i+1, testCase, testCase.expectedErr, err)
 			}
 		} else if err != nil {
-			t.Fatalf("%+v: expected: <nil>, got: %s", testCase, err)
+			t.Fatalf("Test: %d, %#v: expected: <nil>, got: %s", i+1, testCase, err)
 		}
 	}
 }
