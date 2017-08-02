@@ -19,12 +19,15 @@ package cmd
 import (
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/crewjam/saml"
 	router "github.com/gorilla/mux"
 )
 
@@ -122,6 +125,42 @@ type AssumeRoleWithSAMLResult struct {
 	SubjectType string `xml:",omitempty"`
 }
 
+func parseSAMLAssertion(r *http.Request) (*saml.Assertion, error) {
+	rawResponseBuf, err := base64.StdEncoding.DecodeString(r.PostForm.Get("SAMLAssertion"))
+	if err != nil {
+		return nil, err
+	}
+
+	var resp saml.Response
+	if err = xml.Unmarshal(rawResponseBuf, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Destination != globalSAMLProvider.AcsURL.String() {
+		err = fmt.Errorf("`Destination` does not match AcsURL (expected %q)",
+			globalSAMLProvider.AcsURL.String())
+		return nil, err
+	}
+
+	now := UTCNow()
+	if resp.IssueInstant.Add(saml.MaxIssueDelay).Before(now) {
+		err = fmt.Errorf("IssueInstant expired at %s", resp.IssueInstant.Add(saml.MaxIssueDelay))
+		return nil, err
+	}
+
+	if resp.Issuer.Value != globalSAMLProvider.IDPMetadata.EntityID {
+		err = fmt.Errorf("Issuer does not match the IDP metadata (expected %q)",
+			globalSAMLProvider.IDPMetadata.EntityID)
+		return nil, err
+	}
+	if resp.Status.StatusCode.Value != saml.StatusSuccess {
+		return nil, fmt.Errorf("Status code was %s, expected %s", resp.Status.StatusCode.Value,
+			saml.StatusSuccess)
+	}
+
+	// TODO add more checks.
+	return resp.Assertion, nil
+}
+
 func (sts *stsAPIHandlers) AssumeRoleWithSAMLHandler(w http.ResponseWriter, r *http.Request) {
 	// This is an unauthenticated request.
 	if err := r.ParseForm(); err != nil {
@@ -136,9 +175,9 @@ func (sts *stsAPIHandlers) AssumeRoleWithSAMLHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	assertion, err := globalSAMLProvider.ParseResponse(r, nil)
+	assertion, err := parseSAMLAssertion(r)
 	if err != nil {
-		errorIf(err, "Unable to parse SAML response.")
+		errorIf(err, "Unable to parse SAML response")
 		writeSTSErrorResponse(w, ErrSTSMalformedPolicyDocument)
 		return
 	}

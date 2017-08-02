@@ -86,6 +86,7 @@ func New(opts Options) (*SAMLMiddleware, error) {
 			ed := entities.EntityDescriptors[j]
 			if len(ed.IDPSSODescriptors) > 0 {
 				m.ServiceProvider.IDPMetadata = &ed
+				globalSAMLProvider.IDPMetadata = &ed
 				return m, nil
 			}
 		}
@@ -95,6 +96,7 @@ func New(opts Options) (*SAMLMiddleware, error) {
 	}
 
 	m.ServiceProvider.IDPMetadata = entity
+	globalSAMLProvider.IDPMetadata = entity
 	return m, nil
 }
 

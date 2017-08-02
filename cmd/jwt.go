@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -47,10 +46,6 @@ var (
 	errAuthentication       = errors.New("Authentication failed, check your access credentials")
 	errNoAuthToken          = errors.New("JWT token missing")
 )
-
-func getURL(u *url.URL) string {
-	return fmt.Sprintf("%s://%s%s", u.Scheme, u.Host, u.Path)
-}
 
 func canonicalAuth(accessKey, token string) string {
 	return fmt.Sprintf("%s:%s", accessKey, token)
