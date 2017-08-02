@@ -131,7 +131,7 @@ func (listener *httpListener) start() {
 
 		// Peek bytes of maximum length of all HTTP methods.
 		data, err := bufconn.Peek(methodMaxLen)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			if listener.errorLogFunc != nil {
 				// Peek could fail legitimately when clients abruptly close
 				// connection. E.g. Chrome browser opens connections speculatively to
@@ -144,6 +144,10 @@ func (listener *httpListener) start() {
 						bufconn.RemoteAddr(), bufconn.LocalAddr())
 				}
 			}
+			bufconn.Close()
+			return
+		}
+		if err == io.EOF {
 			bufconn.Close()
 			return
 		}
@@ -181,12 +185,16 @@ func (listener *httpListener) start() {
 
 			// Peek bytes of maximum length of all HTTP methods.
 			data, err := bufconn.Peek(methodMaxLen)
-			if err != nil {
+			if err != nil && err != io.EOF {
 				if listener.errorLogFunc != nil {
 					listener.errorLogFunc(err,
 						"Error in reading from new TLS connection %s at server %s",
 						bufconn.RemoteAddr(), bufconn.LocalAddr())
 				}
+				bufconn.Close()
+				return
+			}
+			if err == io.EOF {
 				bufconn.Close()
 				return
 			}

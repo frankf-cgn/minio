@@ -37,14 +37,6 @@ import (
 // cookie once the SAML flow has succeeded. The JWT token contains the
 // authenticated attributes from the SAML assertion.
 //
-// When the middlware receives a request with a valid session JWT it extracts
-// the SAML attributes and modifies the http.Request object adding headers
-// corresponding to the specified attributes. For example, if the attribute
-// "cn" were present in the initial assertion with a value of "Alice Smith",
-// then a corresponding header "X-Saml-Cn" will be added to the request with
-// a value of "Alice Smith". For safety, the middleware strips out any existing
-// headers that begin with "X-Saml-".
-//
 // When issuing JSON Web Tokens, a signing key is required. Because the
 // SAML service provider already has a private key, we borrow that key
 // to sign the JWTs as well.
@@ -98,7 +90,8 @@ func (m *SAMLMiddleware) SAMLAssertionConsumerHandler(w http.ResponseWriter, r *
 		default:
 			errorIf(err, "Unable to parse SAML response")
 		}
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		// Re-direct back to login page if the saml response is is wrong.
+		http.Redirect(w, r, minioReservedBucketPath+"/login", http.StatusPermanentRedirect)
 		return
 	}
 	m.Authorize(w, r, assertion)
@@ -129,11 +122,11 @@ func (m *SAMLMiddleware) SAMLLogoutHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// delete the cookie
-	tokenCookie.Value = ""
+	tokenCookie.Value = "deleted"
 	tokenCookie.Expires = time.Unix(1, 0) // past time as close to epoch as possible, but not zero time.Time{}
 	http.SetCookie(w, tokenCookie)
 
-	http.Redirect(w, r, minioReservedBucketPath+"/login", http.StatusPermanentRedirect)
+	http.Redirect(w, r, minioReservedBucketPath+"/login", http.StatusFound)
 }
 
 // SAMLLoginHandler is SAML login http.Handler - that logs you in.
@@ -293,7 +286,7 @@ func (m *SAMLMiddleware) Authorize(w http.ResponseWriter, r *http.Request, asser
 		redirectURI = claims["uri"].(string)
 
 		// delete the cookie
-		stateCookie.Value = ""
+		stateCookie.Value = "deleted"
 		stateCookie.Expires = time.Unix(1, 0) // past time as close to epoch as possible, but not zero time.Time{}
 		http.SetCookie(w, stateCookie)
 	}
@@ -384,17 +377,9 @@ func parseSAMLJWT(auth string) (token *jwt.Token, tokenClaims TokenClaims, err e
 	return token, tokenClaims, err
 }
 
-// isSAMLAuthorized is invoked by RequireAccount to determine if the request
+// isSAMLAuthorized is invoked by SAMLLoginHandler to determine if the request
 // is already authorized or if the user's browser should be redirected to the
-// SAML login flow. If the request is authorized, then the request headers
-// starting with X-Saml- for each SAML assertion attribute are set. For example,
-// if an attribute "uid" has the value "alice@example.com", then the following
-// header would be added to the request:
-//
-//     X-Saml-Uid: alice@example.com
-//
-// It is an error for this function to be invoked with a request containing
-// any headers starting with X-Saml. This function will panic if you do.
+// SAML login flow.
 func isSAMLAuthorized(r *http.Request, cookieName string, sp saml.ServiceProvider) bool {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
@@ -414,22 +399,5 @@ func isSAMLAuthorized(r *http.Request, cookieName string, sp saml.ServiceProvide
 		errorIf(err, "Invalid audience")
 		return false
 	}
-
-	// It is an error for the request to include any X-SAML* headers,
-	// because those might be confused with ours. If we encounter any
-	// such headers, we abort the request, so there is no confustion.
-	for headerName := range r.Header {
-		if strings.HasPrefix(headerName, "X-Saml") {
-			panic("X-Saml-* headers should not exist when this function is called")
-		}
-	}
-
-	for claimName, claimValues := range tokenClaims.Attributes {
-		for _, claimValue := range claimValues {
-			r.Header.Add("X-Saml-"+claimName, claimValue)
-		}
-	}
-	r.Header.Set("X-Saml-Subject", tokenClaims.Subject)
-
 	return true
 }
