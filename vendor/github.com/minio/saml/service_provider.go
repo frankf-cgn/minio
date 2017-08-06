@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/beevik/etree"
-	"github.com/crewjam/saml/logger"
-	"github.com/crewjam/saml/xmlenc"
+	"github.com/minio/saml/logger"
+	"github.com/minio/saml/xmlenc"
 	dsig "github.com/russellhaering/goxmldsig"
 	"github.com/russellhaering/goxmldsig/etreeutils"
 )
@@ -109,8 +109,8 @@ func (sp *ServiceProvider) Metadata() *EntityDescriptor {
 
 	wantAssertionsSigned := true
 	return &EntityDescriptor{
-		XMLNS: "http://www.w3.org/2000/09/xmldsig#",
-		EntityID:   entityID,
+		XMLNS:    "http://www.w3.org/2000/09/xmldsig#",
+		EntityID: entityID,
 		SPSSODescriptors: []SPSSODescriptor{
 			{
 				SSODescriptor: SSODescriptor{
@@ -120,14 +120,14 @@ func (sp *ServiceProvider) Metadata() *EntityDescriptor {
 							{
 								Use: "signing",
 								KeyInfo: KeyInfo{
-									XMLNS: "http://www.w3.org/2000/09/xmldsig#",
+									XMLNS:       "http://www.w3.org/2000/09/xmldsig#",
 									Certificate: base64.StdEncoding.EncodeToString(sp.Certificate.Raw),
 								},
 								EncryptionMethods: []EncryptionMethod{
 									{Algorithm: "http://www.w3.org/2009/xmlenc11#aes128-gcm"},
 									{Algorithm: "http://www.w3.org/2009/xmlenc11#aes192-gcm"},
 									{Algorithm: "http://www.w3.org/2009/xmlenc11#aes256-gcm"},
-								 	{Algorithm: "http://www.w3.org/2001/04/xmlenc#aes128-cbc"},
+									{Algorithm: "http://www.w3.org/2001/04/xmlenc#aes128-cbc"},
 									{Algorithm: "http://www.w3.org/2001/04/xmlenc#aes192-cbc"},
 									{Algorithm: "http://www.w3.org/2001/04/xmlenc#aes256-cbc"},
 									{Algorithm: "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"},
@@ -137,7 +137,7 @@ func (sp *ServiceProvider) Metadata() *EntityDescriptor {
 					},
 					SingleLogoutServices: []Endpoint{
 						{
-							Binding: HTTPRedirectBinding,
+							Binding:  HTTPRedirectBinding,
 							Location: sp.LogoutURL.String(),
 						},
 					},

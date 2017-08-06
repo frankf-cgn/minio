@@ -23,10 +23,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/crewjam/saml"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	miniohttp "github.com/minio/minio/pkg/http"
+	"github.com/minio/saml"
 )
 
 // minio configuration related constants.

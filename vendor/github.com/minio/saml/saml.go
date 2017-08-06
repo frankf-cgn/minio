@@ -36,7 +36,7 @@
 //         "io/ioutil"
 //         "net/http"
 //
-//         "github.com/crewjam/saml/samlsp"
+//         "github.com/minio/saml/samlsp"
 //     )
 //
 //     func hello(w http.ResponseWriter, r *http.Request) {

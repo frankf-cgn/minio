@@ -73,24 +73,6 @@
 			"revisionTime": "2016-07-13T13:44:25+03:00"
 		},
 		{
-			"checksumSHA1": "I6y/cfs9DGqakkUGLsMDfVCYFmA=",
-			"path": "github.com/crewjam/saml",
-			"revision": "446329e8c4c41e3a72b7e9aa08d8f8fad7228eea",
-			"revisionTime": "2017-06-11T20:38:24Z"
-		},
-		{
-			"checksumSHA1": "lKNxxjwhZtBRpx6/uRQTL8EQ4Io=",
-			"path": "github.com/crewjam/saml/logger",
-			"revision": "446329e8c4c41e3a72b7e9aa08d8f8fad7228eea",
-			"revisionTime": "2017-06-11T20:38:24Z"
-		},
-		{
-			"checksumSHA1": "OfLuV96DWYV71+47je/q5duOoEc=",
-			"path": "github.com/crewjam/saml/xmlenc",
-			"revision": "446329e8c4c41e3a72b7e9aa08d8f8fad7228eea",
-			"revisionTime": "2017-06-11T20:38:24Z"
-		},
-		{
 			"checksumSHA1": "/5cvgU+J4l7EhMXTK76KaCAfOuU=",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
@@ -364,6 +346,24 @@
 			"path": "github.com/minio/minio-go/pkg/set",
 			"revision": "79aa9c39f7be2cdf802aa550a00850dbc1e37835",
 			"revisionTime": "2017-06-19T22:00:32Z"
+		},
+		{
+			"checksumSHA1": "JgrF/SiSpq/9tdEJDZDYvFD1e7E=",
+			"path": "github.com/minio/saml",
+			"revision": "9fe79bdeba89615ed6dcc90016931e69a281f077",
+			"revisionTime": "2017-08-06T00:32:29Z"
+		},
+		{
+			"checksumSHA1": "xHf4czWKV1iANs+lBoWukRioJXs=",
+			"path": "github.com/minio/saml/logger",
+			"revision": "9fe79bdeba89615ed6dcc90016931e69a281f077",
+			"revisionTime": "2017-08-06T00:32:29Z"
+		},
+		{
+			"checksumSHA1": "Wlk/t8KBujadPLv7lf0uyiTHHjI=",
+			"path": "github.com/minio/saml/xmlenc",
+			"revision": "9fe79bdeba89615ed6dcc90016931e69a281f077",
+			"revisionTime": "2017-08-06T00:32:29Z"
 		},
 		{
 			"checksumSHA1": "URVle4qtadmW9w9BulDRHY3kxnA=",

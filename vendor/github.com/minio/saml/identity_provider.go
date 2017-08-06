@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/beevik/etree"
-	"github.com/crewjam/saml/logger"
-	"github.com/crewjam/saml/xmlenc"
+	"github.com/minio/saml/logger"
+	"github.com/minio/saml/xmlenc"
 	dsig "github.com/russellhaering/goxmldsig"
 )
 
@@ -104,8 +104,7 @@ func (idp *IdentityProvider) Metadata() *EntityDescriptor {
 
 	return &EntityDescriptor{
 		EntityID:      idp.MetadataURL.String(),
-//		ValidUntil:    TimeNow().Add(DefaultValidDuration),
-		CacheDuration: DefaultValidDuration,
+		CacheDuration: DefaultCacheDuration,
 		IDPSSODescriptors: []IDPSSODescriptor{
 			IDPSSODescriptor{
 				SSODescriptor: SSODescriptor{

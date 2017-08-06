@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crewjam/saml"
 	"github.com/dgrijalva/jwt-go"
 	jwtreq "github.com/dgrijalva/jwt-go/request"
+	"github.com/minio/saml"
 )
 
 // SAMLMiddleware implements middleware than allows a web application

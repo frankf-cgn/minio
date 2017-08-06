@@ -42,10 +42,10 @@ var Metadata = struct{}{}
 // See http://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf §2.3.2
 type EntityDescriptor struct {
 	XMLName                       xml.Name      `xml:"urn:oasis:names:tc:SAML:2.0:metadata EntityDescriptor"`
-	XMLNS               string         `xml:"xmlns:ds,attr"`
+	XMLNS                         string        `xml:"xmlns:ds,attr"`
 	EntityID                      string        `xml:"entityID,attr"`
 	ID                            string        `xml:",attr,omitempty"`
-	ValidUntil                    *time.Time     `xml:"validUntil,attr,omitempty"`
+	ValidUntil                    *time.Time    `xml:"validUntil,attr,omitempty"`
 	CacheDuration                 time.Duration `xml:"cacheDuration,attr,omitempty"`
 	Signature                     *etree.Element
 	RoleDescriptors               []RoleDescriptor               `xml:"RoleDescriptor"`
@@ -64,7 +64,7 @@ type EntityDescriptor struct {
 func (m EntityDescriptor) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	type Alias EntityDescriptor
 	aux := &struct {
-		CacheDuration Duration    `xml:"cacheDuration,attr,omitempty"`
+		CacheDuration Duration `xml:"cacheDuration,attr,omitempty"`
 		*Alias
 	}{
 		CacheDuration: Duration(m.CacheDuration),
@@ -77,7 +77,7 @@ func (m EntityDescriptor) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 func (m *EntityDescriptor) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	type Alias EntityDescriptor
 	aux := &struct {
-		CacheDuration Duration    `xml:"cacheDuration,attr,omitempty"`
+		CacheDuration Duration `xml:"cacheDuration,attr,omitempty"`
 		*Alias
 	}{
 		Alias: (*Alias)(m),
@@ -156,8 +156,8 @@ type EncryptionMethod struct {
 //
 // TODO(ross): revisit xmldsig and make this type more complete
 type KeyInfo struct {
-	XMLNS       string   `xml:"xmlns:ds,attr"`
-	Certificate string   `xml:"X509Data>X509Certificate"`
+	XMLNS       string `xml:"xmlns:ds,attr"`
+	Certificate string `xml:"X509Data>X509Certificate"`
 }
 
 // Endpoint represents the SAML EndpointType object.
@@ -274,7 +274,7 @@ type AttributeAuthorityDescriptor struct {
 type AffiliationDescriptor struct {
 	AffiliationOwnerID string        `xml:"affiliationOwnerID,attr"`
 	ID                 string        `xml:",attr"`
-	ValidUntil         *time.Time     `xml:"validUntil,attr,omitempty"`
+	ValidUntil         *time.Time    `xml:"validUntil,attr,omitempty"`
 	CacheDuration      time.Duration `xml:"cacheDuration,attr"`
 	Signature          *etree.Element
 	AffiliateMembers   []string        `xml:"AffiliateMember"`

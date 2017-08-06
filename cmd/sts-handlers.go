@@ -27,8 +27,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/crewjam/saml"
 	router "github.com/gorilla/mux"
+	"github.com/minio/saml"
 )
 
 const (
