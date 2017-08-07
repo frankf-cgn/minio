@@ -42,11 +42,11 @@ func newServerCredentials() *serverCredentials {
 	}
 }
 
-func (s *serverCredentials) SetCredential(cred credential) credential {
+func (s *serverCredentials) SetCredential(cred credential) (prevCred credential) {
 	s.Lock()
 	defer s.Unlock()
 
-	prevCred := c.Creds[cred.AccessKey]
+	prevCred = s.Creds[cred.AccessKey]
 
 	s.Creds[cred.AccessKey] = cred
 
@@ -60,11 +60,11 @@ func (s *serverCredentials) GetCredential(accessKey string) credential {
 	return s.Creds[accessKey]
 }
 
-func (s *serverCredentials) RemoveCredential(accessKey string) credential {
+func (s *serverCredentials) RemoveCredential(accessKey string) (prevCred credential) {
 	s.Lock()
 	defer s.Unlock()
 
-	prevCred := c.Creds[cred.AccessKey]
+	prevCred = s.Creds[accessKey]
 
 	delete(s.Creds, accessKey)
 

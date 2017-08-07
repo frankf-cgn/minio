@@ -120,6 +120,8 @@ func (m *SAMLMiddleware) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !isSAMLAuthorized(r, defaultCookieName, m.ServiceProvider) {
+		// Re-direct back to login page if not authorized.
+		http.Redirect(w, r, minioReservedBucketPath+"/login", http.StatusPermanentRedirect)
 		return
 	}
 	// If we try to redirect when the original request is the ACS URL we'll
@@ -133,6 +135,19 @@ func (m *SAMLMiddleware) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	tokenCookie, err := r.Cookie(m.CookieName)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	accessKey, _ := extractAccessAndJWT(tokenCookie.Value)
+	if accessKey == "" {
+		http.Error(w, "Couldn't find access key from cookie token", http.StatusForbidden)
+		return
+	}
+
+	prevCred := globalServerCreds.RemoveCredential(accessKey)
+	if err = globalServerCreds.Save(); err != nil {
+		globalServerCreds.SetCredential(prevCred)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -488,11 +488,12 @@ type URLTokenReply struct {
 
 // CreateURLToken creates a URL token (short-lived) for GET requests.
 func (web *webAPIHandlers) CreateURLToken(r *http.Request, args *WebGenericArgs, reply *URLTokenReply) error {
+	accessKey, _ := extractAccessAndJWT(r.Header.Get("Authorization"))
 	if !isHTTPRequestValid(r) {
 		return toJSONError(errAuthentication)
 	}
 
-	creds := serverConfig.GetCredential()
+	creds := globalServerCreds.GetCredential(accessKey)
 
 	token, err := authenticateURL(creds.AccessKey, creds.SecretKey)
 	if err != nil {
