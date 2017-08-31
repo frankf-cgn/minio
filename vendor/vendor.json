@@ -57,6 +57,48 @@
 			"revisionTime": "2017-02-08T01:01:20Z"
 		},
 		{
+			"checksumSHA1": "6uV5aKsgFYjrbDiNczM7GB2mU94=",
+			"path": "github.com/NebulousLabs/Sia/api",
+			"revision": "141f7b2717f46d8080dd55d3a0cafdcb1931d2f7",
+			"revisionTime": "2017-08-31T03:48:44Z"
+		},
+		{
+			"checksumSHA1": "cUJlcV9jFEvFXCX4NcfpOVfP0Y4=",
+			"path": "github.com/NebulousLabs/Sia/modules",
+			"revision": "141f7b2717f46d8080dd55d3a0cafdcb1931d2f7",
+			"revisionTime": "2017-08-31T03:48:44Z"
+		},
+		{
+			"checksumSHA1": "R1AVrCmA6u268btyZMe7vI+E25Y=",
+			"path": "github.com/NebulousLabs/Sia/modules/renter",
+			"revision": "141f7b2717f46d8080dd55d3a0cafdcb1931d2f7",
+			"revisionTime": "2017-08-31T03:48:44Z"
+		},
+		{
+			"checksumSHA1": "cZAchdFqvFljDTmBiyfqQAhkSDs=",
+			"path": "github.com/NebulousLabs/Sia/modules/renter/contractor",
+			"revision": "141f7b2717f46d8080dd55d3a0cafdcb1931d2f7",
+			"revisionTime": "2017-08-31T03:48:44Z"
+		},
+		{
+			"checksumSHA1": "297F4rCjmTcAaVCKZssMW5PNqWk=",
+			"path": "github.com/NebulousLabs/Sia/modules/renter/hostdb",
+			"revision": "141f7b2717f46d8080dd55d3a0cafdcb1931d2f7",
+			"revisionTime": "2017-08-31T03:48:44Z"
+		},
+		{
+			"checksumSHA1": "cYzHd/vXhJj5ZFbamEngPyvPiYU=",
+			"path": "github.com/NebulousLabs/Sia/modules/renter/hostdb/hosttree",
+			"revision": "141f7b2717f46d8080dd55d3a0cafdcb1931d2f7",
+			"revisionTime": "2017-08-31T03:48:44Z"
+		},
+		{
+			"checksumSHA1": "Prc8G4jR0WiZcnmgYbL3udJTa9w=",
+			"path": "github.com/NebulousLabs/Sia/modules/renter/proto",
+			"revision": "141f7b2717f46d8080dd55d3a0cafdcb1931d2f7",
+			"revisionTime": "2017-08-31T03:48:44Z"
+		},
+		{
 			"path": "github.com/Sirupsen/logrus",
 			"revision": "32055c351ea8b00b96d70f28db48d9840feaf0ec",
 			"revisionTime": "2016-07-12T20:17:32-04:00"
