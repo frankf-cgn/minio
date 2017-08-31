@@ -16,6 +16,23 @@
 
 package cmd
 
+import "github.com/minio/minio-go/pkg/policy"
+
+// SetBucketPolicies sets policy on bucket
+func (s *siaObjects) SetBucketPolicies(bucket string, policyInfo policy.BucketAccessPolicy) error {
+	return traceError(NotImplemented{})
+}
+
+// GetBucketPolicies will get policy on bucket
+func (s *siaObjects) GetBucketPolicies(bucket string) (bal policy.BucketAccessPolicy, e error) {
+	return bal, traceError(NotImplemented{})
+}
+
+// DeleteBucketPolicies deletes all policies on bucket
+func (s *siaObjects) DeleteBucketPolicies(bucket string) error {
+	return traceError(NotImplemented{})
+}
+
 // HealBucket - Not relevant.
 func (l *siaObjects) HealBucket(bucket string) error {
 	return traceError(NotImplemented{})

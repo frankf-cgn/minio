@@ -145,26 +145,6 @@ func post(addr, call, vals string) error {
 	return nil
 }
 
-// getAPI makes a GET API call and decodes the response. An error is returned
-// if the response status is not 2xx.
-func getAPI(addr string, call string, obj interface{}) error {
-	resp, err := apiGet(addr, call)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNoContent {
-		return errors.New("expecting a response, but API returned status code 204 No Content")
-	}
-
-	err = json.NewDecoder(resp.Body).Decode(obj)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // get makes an API call and discards the response. An error is returned if the
 // response status is not 2xx.
 func get(addr, call string) error {
