@@ -153,6 +153,29 @@ EXAMPLES:
 
 `
 
+const siaGatewayTemplate = `NAME:
+  {{.HelpName}} - {{.Usage}}
+
+USAGE:
+  {{.HelpName}} {{if .VisibleFlags}}[FLAGS]{{end}} [SIA_DAEMON_ADDR]
+{{if .VisibleFlags}}
+FLAGS:
+  {{range .VisibleFlags}}{{.}}
+  {{end}}{{end}}
+ENVIRONMENT VARIABLES: (Default values in parenthesis)
+  ACCESS:
+     MINIO_ACCESS_KEY: Custom sia access key
+     MINIO_SECRET_KEY: Sia password
+
+  SIA_TEMP_DIR:      The name of the local Sia temporary storage directory. (.sia_temp)
+  SIA_ROOT_DIR:      The root directory on Sia where all buckets and objects will be stored.
+
+EXAMPLES:
+  1. Start minio gateway server for Sia backend.
+      $ {{.HelpName}}
+
+`
+
 var (
 	azureBackendCmd = cli.Command{
 		Name:               "azure",
@@ -190,12 +213,21 @@ var (
 		HideHelpCommand:    true,
 	}
 
+	siaBackendCmd = cli.Command{
+		Name:               "sia",
+		Usage:              "Sia Decentralized Private Cloud Storage.",
+		Action:             siaGatewayMain,
+		CustomHelpTemplate: siaGatewayTemplate,
+		Flags:              append(serverFlags, globalFlags...),
+		HideHelpCommand:    true,
+	}
+
 	gatewayCmd = cli.Command{
 		Name:            "gateway",
 		Usage:           "Start object storage gateway.",
 		Flags:           append(serverFlags, globalFlags...),
 		HideHelpCommand: true,
-		Subcommands:     []cli.Command{azureBackendCmd, s3BackendCmd, gcsBackendCmd, b2BackendCmd},
+		Subcommands:     []cli.Command{azureBackendCmd, s3BackendCmd, gcsBackendCmd, b2BackendCmd, siaBackendCmd},
 	}
 )
 
@@ -207,6 +239,7 @@ const (
 	s3Backend    gatewayBackend = "s3"
 	gcsBackend   gatewayBackend = "gcs"
 	b2Backend    gatewayBackend = "b2"
+	siaBackend   gatewayBackend = "sia"
 	// Add more backends here.
 )
 
@@ -217,6 +250,7 @@ const (
 // - AWS S3.
 // - Google Cloud Storage.
 // - Backblaze B2.
+// - Sia Decentralized Private Cloud.
 // - Add your favorite backend here.
 func newGatewayLayer(backendType gatewayBackend, arg string) (GatewayLayer, error) {
 	switch backendType {
@@ -234,6 +268,11 @@ func newGatewayLayer(backendType gatewayBackend, arg string) (GatewayLayer, erro
 		// will be removed when B2 is ready for production use.
 		log.Println(colorYellow("\n               *** Warning: Not Ready for Production ***"))
 		return newB2Gateway()
+	case siaBackend:
+		// FIXME: The following print command is temporary and
+		// will be removed when Sia is ready for production use.
+		log.Println(colorYellow("\n               *** Warning: Not Ready for Production ***"))
+		return newSiaGateway(arg)
 	}
 
 	return nil, fmt.Errorf("Unrecognized backend type %s", backendType)
@@ -346,6 +385,18 @@ func b2GatewayMain(ctx *cli.Context) {
 	gatewayMain(ctx, b2Backend)
 }
 
+// Handler for 'minio gateway sia' command line
+func siaGatewayMain(ctx *cli.Context) {
+	if ctx.Args().Present() && ctx.Args().First() == "help" {
+		cli.ShowCommandHelpAndExit(ctx, "sia", 1)
+	}
+
+	// Validate gateway arguments.
+	fatalIf(validateGatewayArguments(ctx.GlobalString("address"), ctx.Args().First()), "Invalid argument")
+
+	gatewayMain(ctx, siaBackend)
+}
+
 // Handler for 'minio gateway'.
 func gatewayMain(ctx *cli.Context, backendType gatewayBackend) {
 	// Get quiet flag from command line argument.
@@ -455,6 +506,8 @@ func gatewayMain(ctx *cli.Context, backendType gatewayBackend) {
 			mode = globalMinioModeGatewayS3
 		case b2Backend:
 			mode = globalMinioModeGatewayB2
+		case siaBackend:
+			mode = globalMinioModeGatewaySia
 		}
 
 		// Check update mode.
