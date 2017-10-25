@@ -171,6 +171,12 @@
 			"revisionTime": "2017-03-16T01:29:07Z"
 		},
 		{
+			"checksumSHA1": "oXHZ3gVHE4yO4LUL0g6nFtYfCTs=",
+			"path": "github.com/NebulousLabs/errors",
+			"revision": "98e1f05a42d03a706ec86baf52f0bb5a40923f0d",
+			"revisionTime": "2017-04-30T17:02:33Z"
+		},
+		{
 			"checksumSHA1": "lJu971+H7OnvKkGXYFpMRPlgnEs=",
 			"path": "github.com/NebulousLabs/fastrand",
 			"revision": "60b615657d85339c105efb2170327a2d948d4b17",
@@ -181,6 +187,12 @@
 			"path": "github.com/NebulousLabs/merkletree",
 			"revision": "24b134f7c440c210a319d35b542278b9f7f9b5e5",
 			"revisionTime": "2017-08-21T02:32:33Z"
+		},
+		{
+			"checksumSHA1": "x4+fn6ZJhJcaWz2313ZYReu5bjs=",
+			"path": "github.com/NebulousLabs/threadgroup",
+			"revision": "d137120f1e2837732baa67b3e8a3c199043f876a",
+			"revisionTime": "2017-05-09T02:30:38Z"
 		},
 		{
 			"path": "github.com/Sirupsen/logrus",
