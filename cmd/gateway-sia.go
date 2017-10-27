@@ -204,7 +204,7 @@ func getAPI(addr string, call string, apiPassword string, obj interface{}) error
 }
 
 // get makes an API call and discards the response. An error is returned if the
-// response status is not 2xx.
+// responsee status is not 2xx.
 func get(addr, call, apiPassword string) error {
 	resp, err := apiGet(addr, call, apiPassword)
 	if err != nil {
@@ -217,10 +217,12 @@ func get(addr, call, apiPassword string) error {
 // newSiaGateway returns Sia gatewaylayer
 func newSiaGateway(arg string) (GatewayLayer, error) {
 	sia := &siaObjects{
-		Address:  arg,
-		RootDir:  os.Getenv("SIA_ROOT_DIR"),
+		Address: arg,
+		// RootDir uses access key directly, provides partitioning for
+		// concurrent users talking to same sia daemon.
+		RootDir:  os.Getenv("MINIO_ACCESS_KEY"),
 		TempDir:  os.Getenv("SIA_TEMP_DIR"),
-		password: os.Getenv("MINIO_SECRET_KEY"),
+		password: os.Getenv("SIA_API_PASSWORD"),
 	}
 
 	// If Address not provided on command line or ENV, default to:
@@ -233,9 +235,13 @@ func newSiaGateway(arg string) (GatewayLayer, error) {
 		sia.TempDir = ".sia_temp"
 	}
 
+	// Make sure we create the temp directory with proper permissions.
+	if err := os.Mkdir(sia.TempDir, 0400); err != nil {
+		return nil, err
+	}
+
 	fmt.Printf("\nSia Gateway Configuration:\n")
 	fmt.Printf("  Sia Daemon API Address: %s\n", sia.Address)
-	fmt.Printf("  Sia Root Directory: %s\n", sia.RootDir)
 	fmt.Printf("  Sia Temp Directory: %s\n", sia.TempDir)
 	return sia, nil
 }
@@ -279,11 +285,7 @@ func (s *siaObjects) ListBuckets() (buckets []BucketInfo, err error) {
 
 	m := make(set.StringSet)
 
-	var prefix string
-	if s.RootDir != "" {
-		prefix = s.RootDir + "/"
-	}
-
+	prefix := s.RootDir + "/"
 	for _, sObj := range sObjs {
 		if strings.HasPrefix(sObj.SiaPath, prefix) {
 			siaObj := strings.TrimPrefix(sObj.SiaPath, prefix)
@@ -304,9 +306,9 @@ func (s *siaObjects) ListBuckets() (buckets []BucketInfo, err error) {
 	return buckets, nil
 }
 
-// DeleteBucket deletes a bucket on Sia
+// DeleteBucket deletes a bucket on Sia.
 func (s *siaObjects) DeleteBucket(bucket string) error {
-	return traceError(BucketNotEmpty{})
+	return nil
 }
 
 func (s *siaObjects) ListObjects(bucket string, prefix string, marker string, delimiter string, maxKeys int) (loi ListObjectsInfo, err error) {
@@ -318,11 +320,7 @@ func (s *siaObjects) ListObjects(bucket string, prefix string, marker string, de
 	loi.IsTruncated = false
 	loi.NextMarker = ""
 
-	var root string
-
-	if s.RootDir != "" {
-		root = s.RootDir + "/"
-	}
+	root := s.RootDir + "/"
 
 	for _, sObj := range siaObjs {
 		name := strings.TrimPrefix(sObj.SiaPath, pathJoin(root, bucket, "/"))
@@ -499,12 +497,7 @@ func (s *siaObjects) listRenterFiles(bucket string) (siaObjs []siaObjectInfo, e 
 	}
 
 	var prefix string
-	var root string
-	if s.RootDir == "" {
-		root = ""
-	} else {
-		root = s.RootDir + "/"
-	}
+	root := s.RootDir + "/"
 	if bucket == "" {
 		prefix = root
 	} else {

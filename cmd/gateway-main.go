@@ -19,6 +19,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"os/signal"
@@ -164,11 +165,11 @@ FLAGS:
   {{end}}{{end}}
 ENVIRONMENT VARIABLES: (Default values in parenthesis)
   ACCESS:
-     MINIO_ACCESS_KEY: Custom sia access key
-     MINIO_SECRET_KEY: Sia password
+     MINIO_ACCESS_KEY: Custom access key (Do not re-use same access keys on all instances)
+     MINIO_SECRET_KEY: Custom secret key (Do not re-use same secret keys on all instances)
 
-  SIA_TEMP_DIR:      The name of the local Sia temporary storage directory. (.sia_temp)
-  SIA_ROOT_DIR:      The root directory on Sia where all buckets and objects will be stored.
+  SIA_TEMP_DIR:        The name of the local Sia temporary storage directory. (.sia_temp)
+  SIA_API_PASSWORD:    API password for Sia daemon. (default is empty)
 
 EXAMPLES:
   1. Start minio gateway server for Sia backend.
