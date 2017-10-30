@@ -236,7 +236,7 @@ func newSiaGateway(arg string) (GatewayLayer, error) {
 	}
 
 	// Make sure we create the temp directory with proper permissions.
-	if err := os.Mkdir(sia.TempDir, 0400); err != nil {
+	if err := os.MkdirAll(sia.TempDir, 0400); err != nil {
 		return nil, err
 	}
 

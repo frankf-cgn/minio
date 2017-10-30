@@ -19,7 +19,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"os/signal"
@@ -174,6 +173,9 @@ ENVIRONMENT VARIABLES: (Default values in parenthesis)
 EXAMPLES:
   1. Start minio gateway server for Sia backend.
       $ {{.HelpName}}
+
+  2. Start minio gateway server for Sia backend on non-default address.
+      $ {{.HelpName}} sia.gateway.com:8080
 
 `
 
