@@ -137,6 +137,8 @@ func waitForFormatXL(firstDisk bool, endpoints EndpointList, setCount, disksPerS
 				}
 				return format, nil
 			}
+			console.Println("All disks returned", sErrs)
+			console.Println("Unable to get formatted disks in quorum", err)
 			console.Printf("Waiting for a minimum of %d disks to come online (elapsed %s)\n", len(endpoints)/2, getElapsedTime())
 		case <-globalOSSignalCh:
 			return nil, fmt.Errorf("Initializing data volumes gracefully stopped")
