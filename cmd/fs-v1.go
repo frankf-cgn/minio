@@ -565,7 +565,7 @@ func (fs *FSObjects) getObjectInfo(ctx context.Context, bucket, object string) (
 	fsMeta := fsMetaV1{}
 	if hasSuffix(object, slashSeparator) {
 		// Since we support PUT of a "directory" object, we allow HEAD.
-		if !fsIsDir(ctx, pathJoin(fs.fsPath, bucket, object)) {
+		if !fs.isObjectDir(bucket, object) {
 			return oi, errFileNotFound
 		}
 		fi, err := fsStatDir(ctx, pathJoin(fs.fsPath, bucket, object))
@@ -623,11 +623,7 @@ func (fs *FSObjects) getObjectInfoWithLock(ctx context.Context, bucket, object s
 	}
 
 	if _, err := fs.statBucketDir(ctx, bucket); err != nil {
-		return oi, toObjectErr(err, bucket)
-	}
-
-	if strings.HasSuffix(object, slashSeparator) && !fs.isObjectDir(bucket, object) {
-		return oi, errFileNotFound
+		return oi, err
 	}
 
 	return fs.getObjectInfo(ctx, bucket, object)
