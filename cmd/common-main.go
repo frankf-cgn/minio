@@ -29,11 +29,11 @@ import (
 	etcd "github.com/coreos/etcd/clientv3"
 
 	"github.com/minio/cli"
+	"github.com/minio/minio-go/pkg/set"
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/auth"
 	"github.com/minio/minio/pkg/dns"
-
-	"github.com/minio/minio-go/pkg/set"
+	xnet "github.com/minio/minio/pkg/net"
 )
 
 // Check for updates and print a notification message
@@ -68,16 +68,20 @@ func initConfig() {
 				logger.FatalIf(err, "Unable to load config version: '%s'.", serverConfigVersion)
 			}
 		}
-		return
-	}
+		// Watch config for changes and reloads them in-memory.
+		go watchConfig()
 
-	if isFile(getConfigFile()) {
-		logger.FatalIf(migrateConfig(), "Config migration failed")
-		logger.FatalIf(loadConfig(), "Unable to load the configuration file")
+		globalServerCreds, err = auth.NewStore(globalEtcdClient)
+		logger.FatalIf(err, "Unable initialize temporary credentials store")
 	} else {
-		// Config file does not exist, we create it fresh and return upon success.
-		logger.FatalIf(newConfig(), "Unable to initialize minio config for the first time")
-		logger.Info("Created minio configuration file successfully at " + getConfigDir())
+		if isFile(getConfigFile()) {
+			logger.FatalIf(migrateConfig(), "Config migration failed")
+			logger.FatalIf(loadConfig(), "Unable to load the configuration file")
+		} else {
+			// Config file does not exist, we create it fresh and return upon success.
+			logger.FatalIf(newConfig(), "Unable to initialize minio config for the first time")
+			logger.Info("Created minio configuration file successfully at " + getConfigDir())
+		}
 	}
 }
 
@@ -142,6 +146,7 @@ func handleCommonEnvVars() {
 		if err != nil {
 			logger.Fatal(uiErrInvalidCredentials(err), "Unable to validate credentials inherited from the shell environment")
 		}
+		cred.Expiration = timeSentinel
 
 		// credential Envs are set globally.
 		globalIsEnvCreds = true
@@ -272,12 +277,35 @@ func handleCommonEnvVars() {
 	if worm := os.Getenv("MINIO_WORM"); worm != "" {
 		wormFlag, err := ParseBoolFlag(worm)
 		if err != nil {
-			logger.Fatal(uiErrInvalidWormValue(nil).Msg("Unknown value `%s`", worm), "Unable to validate MINIO_WORM environment variable")
+			logger.Fatal(uiErrInvalidWormValue(nil).Msg("Unknown value `%s`", worm), "Invalid MINIO_WORM environment variable")
 		}
 
 		// worm Envs are set globally, this does not represent
 		// if worm is turned off or on.
 		globalIsEnvWORM = true
 		globalWORMEnabled = bool(wormFlag)
+	}
+
+	// Get JWKS URL.
+	if jwksURL := os.Getenv("MINIO_AUTH_JWT_JWKS_URL"); jwksURL != "" {
+		globalIsEnvJWT = true
+		var err error
+		globalJWKSURL, err = xnet.ParseURL(jwksURL)
+		if err != nil {
+			logger.Fatal(err, "Invalid MINIO_AUTH_JWT_JWKS_URL environment variable")
+		}
+	}
+
+	// Get OPA URL.
+	if opaURL := os.Getenv("MINIO_ACCESS_OPA_URL"); opaURL != "" {
+		globalIsEnvOPA = true
+		var err error
+		globalOpaURL, err = xnet.ParseURL(opaURL)
+		if err != nil {
+			logger.Fatal(err, "Invalid MINIO_ACCESS_OPA_URL environment variable")
+		}
+		if opaAuthToken := os.Getenv("MINIO_ACCESS_OPA_AUTHTOKEN"); opaAuthToken != "" {
+			globalOpaAuthToken = opaAuthToken
+		}
 	}
 }

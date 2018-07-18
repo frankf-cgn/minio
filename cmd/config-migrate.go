@@ -23,10 +23,12 @@ import (
 
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/auth"
+	"github.com/minio/minio/pkg/auth/validator"
 	"github.com/minio/minio/pkg/dns"
 	"github.com/minio/minio/pkg/event"
 	"github.com/minio/minio/pkg/event/target"
 	xnet "github.com/minio/minio/pkg/net"
+	"github.com/minio/minio/pkg/policy"
 	"github.com/minio/minio/pkg/quick"
 )
 
@@ -190,6 +192,11 @@ func migrateConfig() error {
 		fallthrough
 	case "26":
 		if err = migrateV26ToV27(); err != nil {
+			return err
+		}
+		fallthrough
+	case "27":
+		if err = migrateV27ToV28(); err != nil {
 			return err
 		}
 		fallthrough
@@ -2353,5 +2360,39 @@ func migrateV26ToV27() error {
 	}
 
 	logger.Info(configMigrateMSGTemplate, configFile, "26", "27")
+	return nil
+}
+
+func migrateV27ToV28() error {
+	configFile := getConfigFile()
+
+	// config V27 is backward compatible with V26, load the old
+	// config file in serverConfigV27 struct and put some examples
+	// in the new `logger` field
+	srvConfig := &serverConfigV28{}
+	_, err := quick.LoadConfig(configFile, globalEtcdClient, srvConfig)
+	if os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("Unable to load config file. %v", err)
+	}
+
+	if srvConfig.Version != "27" {
+		return nil
+	}
+
+	srvConfig.Version = "28"
+
+	// Initialize authN validators.
+	srvConfig.IAM.Identity.JWT = validator.JWTArgs{}
+
+	// Initialize authZ validators
+	srvConfig.IAM.Policy.OPA = policy.OpaArgs{}
+
+	if err = quick.SaveConfig(srvConfig, configFile, globalEtcdClient); err != nil {
+		return fmt.Errorf("Failed to migrate config from ‘27’ to ‘28’. %v", err)
+	}
+
+	logger.Info(configMigrateMSGTemplate, configFile, "27", "28")
 	return nil
 }

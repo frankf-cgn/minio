@@ -20,7 +20,9 @@ import (
 	"sync"
 
 	"github.com/minio/minio/pkg/auth"
+	"github.com/minio/minio/pkg/auth/validator"
 	"github.com/minio/minio/pkg/event/target"
+	"github.com/minio/minio/pkg/policy"
 	"github.com/minio/minio/pkg/quick"
 )
 
@@ -721,4 +723,49 @@ type serverConfigV27 struct {
 
 	// Logger configuration
 	Logger loggerConfig `json:"logger"`
+}
+
+// serverConfigV28 is just like version '27', stores additionally
+// STS auth providers.
+// IMPORTANT NOTE: When updating this struct make sure that
+// serverConfig.ConfigDiff() is updated as necessary.
+type serverConfigV28 struct {
+	quick.Config `json:"-"` // ignore interfaces
+
+	Version string `json:"version"`
+
+	// S3 API configuration.
+	Credential auth.Credentials `json:"credential"`
+	Region     string           `json:"region"`
+	Browser    BoolFlag         `json:"browser"`
+	Worm       BoolFlag         `json:"worm"`
+	Domain     string           `json:"domain"`
+
+	// Storage class configuration
+	StorageClass storageClassConfig `json:"storageclass"`
+
+	// Cache configuration
+	Cache CacheConfig `json:"cache"`
+
+	// Notification queue configuration.
+	Notify notifier `json:"notify"`
+
+	// Logger configuration
+	Logger loggerConfig `json:"logger"`
+
+	// IAM identity and policy configuration.
+	IAM struct {
+		// Authentication validators
+		Identity struct {
+			JWT validator.JWTArgs `json:"jwt"`
+
+			// Add new validators here.
+		} `json:"identity"`
+		// Authorization validators
+		Policy struct {
+			OPA policy.OpaArgs `json:"opa"`
+
+			// Add new validators here.
+		} `json:"policy"`
+	} `json:"iam"`
 }

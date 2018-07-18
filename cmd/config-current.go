@@ -27,8 +27,10 @@ import (
 	"github.com/minio/minio/cmd/logger"
 
 	"github.com/minio/minio/pkg/auth"
+	"github.com/minio/minio/pkg/auth/validator"
 	"github.com/minio/minio/pkg/event"
 	"github.com/minio/minio/pkg/event/target"
+	"github.com/minio/minio/pkg/policy"
 	"github.com/minio/minio/pkg/quick"
 )
 
@@ -41,9 +43,9 @@ import (
 // 6. Make changes in config-current_test.go for any test change
 
 // Config version
-const serverConfigVersion = "27"
+const serverConfigVersion = "28"
 
-type serverConfig = serverConfigV27
+type serverConfig = serverConfigV28
 
 var (
 	// globalServerConfig server config.
@@ -68,12 +70,16 @@ func (s *serverConfig) GetRegion() string {
 }
 
 // SetCredential sets new credential and returns the previous credential.
-func (s *serverConfig) SetCredential(creds auth.Credentials) (prevCred auth.Credentials) {
+func (s *serverConfig) SetCredential(cred auth.Credentials) (prevCred auth.Credentials) {
+	if !cred.IsValid() {
+		return s.Credential
+	}
+
 	// Save previous credential.
 	prevCred = s.Credential
 
 	// Set updated credential.
-	s.Credential = creds
+	s.Credential = cred
 
 	// Return previous credential.
 	return prevCred
@@ -153,56 +159,64 @@ func (s *serverConfig) Validate() error {
 
 	for _, v := range s.Notify.AMQP {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("amqp: %s", err.Error())
+			return fmt.Errorf("amqp: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.Elasticsearch {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("elasticsearch: %s", err.Error())
+			return fmt.Errorf("elasticsearch: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.Kafka {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("kafka: %s", err.Error())
+			return fmt.Errorf("kafka: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.MQTT {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("mqtt: %s", err.Error())
+			return fmt.Errorf("mqtt: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.MySQL {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("mysql: %s", err.Error())
+			return fmt.Errorf("mysql: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.NATS {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("nats: %s", err.Error())
+			return fmt.Errorf("nats: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.PostgreSQL {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("postgreSQL: %s", err.Error())
+			return fmt.Errorf("postgreSQL: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.Redis {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("redis: %s", err.Error())
+			return fmt.Errorf("redis: %s", err)
 		}
 	}
 
 	for _, v := range s.Notify.Webhook {
 		if err := v.Validate(); err != nil {
-			return fmt.Errorf("webhook: %s", err.Error())
+			return fmt.Errorf("webhook: %s", err)
 		}
+	}
+
+	if err := s.IAM.Identity.JWT.Validate(); err != nil {
+		return fmt.Errorf("jwt: %s", err)
+	}
+
+	if err := s.IAM.Policy.OPA.Validate(); err != nil {
+		return fmt.Errorf("opa: %s", err)
 	}
 
 	return nil
@@ -262,6 +276,8 @@ func (s *serverConfig) ConfigDiff(t *serverConfig) string {
 		return "MQTT Notification configuration differs"
 	case !reflect.DeepEqual(s.Logger, t.Logger):
 		return "Logger configuration differs"
+	case !reflect.DeepEqual(s.IAM, t.IAM):
+		return "IAM configuration differs"
 	case reflect.DeepEqual(s, t):
 		return ""
 	default:
@@ -327,6 +343,40 @@ func newServerConfig() *serverConfig {
 	return srvCfg
 }
 
+func updateCachedConfig(srvCfg *serverConfig) {
+	// hold the mutex lock before a new config is assigned.
+	globalServerConfigMu.Lock()
+	globalServerConfig = srvCfg
+	if !globalIsEnvCreds {
+		globalActiveCred = globalServerConfig.GetCredential()
+	}
+	if !globalIsEnvBrowser {
+		globalIsBrowserEnabled = globalServerConfig.GetBrowser()
+	}
+	if !globalIsEnvWORM {
+		globalWORMEnabled = globalServerConfig.GetWorm()
+	}
+	if !globalIsEnvRegion {
+		globalServerRegion = globalServerConfig.GetRegion()
+	}
+	if !globalIsEnvDomainName {
+		globalDomainName = globalServerConfig.Domain
+	}
+	if !globalIsStorageClass {
+		globalStandardStorageClass, globalRRStorageClass = globalServerConfig.GetStorageClass()
+	}
+	if !globalIsDiskCacheEnabled {
+		cacheConf := globalServerConfig.GetCacheConfig()
+		globalCacheDrives = cacheConf.Drives
+		globalCacheExcludes = cacheConf.Exclude
+		globalCacheExpiry = cacheConf.Expiry
+		globalCacheMaxUse = cacheConf.MaxUse
+	}
+	globalAuthValidators = getAuthValidators(globalServerConfig)
+	globalOpaPolicySys = policy.NewOpa(globalServerConfig.IAM.Policy.OPA)
+	globalServerConfigMu.Unlock()
+}
+
 // newConfig - initialize a new server config, saves env parameters if
 // found, otherwise use default parameters
 func newConfig() error {
@@ -336,44 +386,42 @@ func newConfig() error {
 		return err
 	}
 
-	// If env is set override the credentials from config file.
-	if globalIsEnvCreds {
-		srvCfg.SetCredential(globalActiveCred)
-	}
+	// Overrides default config entries with user set ENVs
+	setConfigEnvsOverrides(srvCfg)
 
-	if globalIsEnvBrowser {
-		srvCfg.SetBrowser(globalIsBrowserEnabled)
-	}
-
-	if globalIsEnvWORM {
-		srvCfg.SetWorm(globalWORMEnabled)
-	}
-
-	if globalIsEnvRegion {
-		srvCfg.SetRegion(globalServerRegion)
-	}
-
-	if globalIsEnvDomainName {
-		srvCfg.Domain = globalDomainName
-	}
-
-	if globalIsStorageClass {
-		srvCfg.SetStorageClass(globalStandardStorageClass, globalRRStorageClass)
-	}
-
-	if globalIsDiskCacheEnabled {
-		srvCfg.SetCacheConfig(globalCacheDrives, globalCacheExcludes, globalCacheExpiry, globalCacheMaxUse)
-	}
-
-	// hold the mutex lock before a new config is assigned.
-	// Save the new config globally.
-	// unlock the mutex.
-	globalServerConfigMu.Lock()
-	globalServerConfig = srvCfg
-	globalServerConfigMu.Unlock()
+	// Update in-memory cached config with a fresh config.
+	updateCachedConfig(srvCfg)
 
 	// Save config into file.
 	return Save(getConfigFile(), globalServerConfig)
+}
+
+// loadConfig - loads a new config from disk, overrides params from env
+// if found and valid
+func loadConfig() error {
+	srvCfg, err := getValidConfig()
+	if err != nil {
+		return uiErrInvalidConfig(nil).Msg(err.Error())
+	}
+
+	// Overrides default config entries with user set ENVs
+	setConfigEnvsOverrides(srvCfg)
+
+	// Update in-memory cached config with a fresh config.
+	updateCachedConfig(srvCfg)
+
+	return nil
+}
+
+// watchConfig - watches config.json changes on etcd and loads them.
+func watchConfig() {
+	for watchResp := range globalEtcdClient.Watch(context.Background(), getConfigFile()) {
+		for _, event := range watchResp.Events {
+			if event.IsModify() || event.IsCreate() {
+				loadConfig()
+			}
+		}
+	}
 }
 
 // newQuickConfig - initialize a new server config, with an allocated
@@ -413,14 +461,7 @@ func getValidConfig() (*serverConfig, error) {
 	return srvCfg, nil
 }
 
-// loadConfig - loads a new config from disk, overrides params from env
-// if found and valid
-func loadConfig() error {
-	srvCfg, err := getValidConfig()
-	if err != nil {
-		return uiErrInvalidConfig(nil).Msg(err.Error())
-	}
-
+func setConfigEnvsOverrides(srvCfg *serverConfig) {
 	// If env is set override the credentials from config file.
 	if globalIsEnvCreds {
 		srvCfg.SetCredential(globalActiveCred)
@@ -446,37 +487,30 @@ func loadConfig() error {
 		srvCfg.SetCacheConfig(globalCacheDrives, globalCacheExcludes, globalCacheExpiry, globalCacheMaxUse)
 	}
 
-	// hold the mutex lock before a new config is assigned.
-	globalServerConfigMu.Lock()
-	globalServerConfig = srvCfg
-	if !globalIsEnvCreds {
-		globalActiveCred = globalServerConfig.GetCredential()
+	if globalIsEnvJWT {
+		srvCfg.IAM.Identity.JWT.WebKeyURL = globalJWKSURL
 	}
-	if !globalIsEnvBrowser {
-		globalIsBrowserEnabled = globalServerConfig.GetBrowser()
-	}
-	if !globalIsEnvWORM {
-		globalWORMEnabled = globalServerConfig.GetWorm()
-	}
-	if !globalIsEnvRegion {
-		globalServerRegion = globalServerConfig.GetRegion()
-	}
-	if !globalIsEnvDomainName {
-		globalDomainName = globalServerConfig.Domain
-	}
-	if !globalIsStorageClass {
-		globalStandardStorageClass, globalRRStorageClass = globalServerConfig.GetStorageClass()
-	}
-	if !globalIsDiskCacheEnabled {
-		cacheConf := globalServerConfig.GetCacheConfig()
-		globalCacheDrives = cacheConf.Drives
-		globalCacheExcludes = cacheConf.Exclude
-		globalCacheExpiry = cacheConf.Expiry
-		globalCacheMaxUse = cacheConf.MaxUse
-	}
-	globalServerConfigMu.Unlock()
 
-	return nil
+	if globalIsEnvOPA {
+		srvCfg.IAM.Policy.OPA.URL = globalOpaURL
+		srvCfg.IAM.Policy.OPA.AuthToken = globalOpaAuthToken
+	}
+}
+
+// getAuthValidators - returns ValidatorList which contains enabled providers in serverConfig.
+// A new authentication provider is added like below
+// * Add a new provider in pkg/auth/provider package.
+// * Add newly added provider configuration to serverConfig.AuthValidators.<PROVIDER_NAME>.
+// * Handle the configuration in this function to create/add into ValidatorList.
+func getAuthValidators(config *serverConfig) *auth.Validators {
+	validators := auth.NewValidators()
+
+	if config.IAM.Identity.JWT.WebKeyURL != nil {
+		validators.Add(validator.NewJWT(config.IAM.Identity.JWT))
+	}
+	// Add new validators here.
+
+	return validators
 }
 
 // getNotificationTargets - returns TargetList which contains enabled targets in serverConfig.

@@ -77,6 +77,11 @@ func (sys *PolicySys) Remove(bucketName string) {
 
 // IsAllowed - checks given policy args is allowed to continue the Rest API.
 func (sys *PolicySys) IsAllowed(args policy.Args) bool {
+	// If opa is configured, let the policy arrive from Opa
+	if globalOpaPolicySys != nil {
+		return globalOpaPolicySys.IsAllowed(args)
+	}
+
 	sys.RLock()
 	defer sys.RUnlock()
 

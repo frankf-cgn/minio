@@ -33,6 +33,8 @@ import (
 	"github.com/minio/minio/pkg/auth"
 	"github.com/minio/minio/pkg/certs"
 	"github.com/minio/minio/pkg/dns"
+	xnet "github.com/minio/minio/pkg/net"
+	"github.com/minio/minio/pkg/policy"
 )
 
 // minio configuration related constants.
@@ -217,6 +219,25 @@ var (
 	globalUsageCheckInterval = globalDefaultUsageCheckInterval
 
 	// Add new variable global values here.
+)
+
+// STS handler global values
+var (
+	// Authorization validators list.
+	globalAuthValidators *auth.Validators
+
+	// Server credentials auth store.
+	globalServerCreds *auth.CredStore
+
+	// Opa policy subsystem
+	globalOpaPolicySys *policy.Opa
+
+	globalIsEnvJWT bool
+	globalIsEnvOPA bool
+
+	globalJWKSURL      *xnet.URL
+	globalOpaURL       *xnet.URL
+	globalOpaAuthToken string
 )
 
 // global colors.

@@ -249,8 +249,16 @@ func TestConfigDiff(t *testing.T) {
 		{&serverConfig{}, nil, "Given configuration is empty"},
 		// 2
 		{
-			&serverConfig{Credential: auth.Credentials{"u1", "p1"}},
-			&serverConfig{Credential: auth.Credentials{"u1", "p2"}},
+			&serverConfig{Credential: auth.Credentials{
+				AccessKey:  "u1",
+				SecretKey:  "p1",
+				Expiration: timeSentinel,
+			}},
+			&serverConfig{Credential: auth.Credentials{
+				AccessKey:  "u1",
+				SecretKey:  "p2",
+				Expiration: timeSentinel,
+			}},
 			"Credential configuration differs",
 		},
 		// 3

@@ -99,6 +99,12 @@ func configureServerHandler(endpoints EndpointList) (http.Handler, error) {
 		registerDistXLRouters(router, endpoints)
 	}
 
+	// Enable sts only if we have configured temporary credential support.
+	if globalServerCreds != nil {
+		// Add STS router
+		registerSTSRouter(router)
+	}
+
 	// Add Admin RPC router
 	registerAdminRPCRouter(router)
 
