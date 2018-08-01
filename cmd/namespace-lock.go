@@ -146,9 +146,9 @@ func (n *nsLockMap) lock(volume, path string, lockSource, opsID string, readLock
 	if !found {
 		nsLk = &nsLock{
 			RWLockerSync: func() RWLockerSync {
-				if n.isDistXL {
-					return dsync.NewDRWMutex(pathJoin(volume, path), globalDsync)
-				}
+				// if n.isDistXL {
+				// 	return dsync.NewDRWMutex(pathJoin(volume, path), globalDsync)
+				// }
 				return &lsync.LRWMutex{}
 			}(),
 			ref: 0,

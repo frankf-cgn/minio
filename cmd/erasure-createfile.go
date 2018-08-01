@@ -64,8 +64,22 @@ func (s *ErasureStorage) CreateFile(ctx context.Context, src io.Reader, volume, 
 		for i := range errChans { // span workers
 			go erasureAppendFile(ctx, s.disks[i], volume, path, hashers[i], blocks[i], errChans[i])
 		}
+		var successCount int
 		for i := range errChans { // wait until all workers are finished
-			errs[i] = <-errChans[i]
+			if eerr := <-errChans[i]; eerr != nil {
+				errs[i] = eerr
+				continue
+			}
+			successCount++
+			if successCount == writeQuorum-1 {
+				rerrChans := errChans[successCount:]
+				go func() {
+					for j := range rerrChans {
+						<-rerrChans[j]
+					}
+				}()
+				break
+			}
 		}
 		if err = reduceWriteQuorumErrs(ctx, errs, objectOpIgnoredErrs, writeQuorum); err != nil {
 			return f, err
