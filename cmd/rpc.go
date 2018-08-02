@@ -165,9 +165,17 @@ type RPCClient struct {
 }
 
 func (client *RPCClient) setRetryTicker(ticker *time.Ticker) {
+	if ticker == nil {
+		client.RLock()
+		if client.retryTicker == nil {
+			client.RUnlock()
+			return
+		}
+		client.RUnlock()
+	}
+
 	client.Lock()
 	defer client.Unlock()
-
 	if client.retryTicker != nil {
 		client.retryTicker.Stop()
 	}
